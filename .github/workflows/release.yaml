@@ -17,20 +17,20 @@ jobs:
     with:
       # working-directory: libs/infinity_emb
       dockerfile: libs/infinity_emb/Dockerfile.nvidia_auto
-      image: michaelf34/infinity
+      image: vlsi/infinity
       appendix_tag: ""
       platforms: "linux/amd64,linux/arm64"
     secrets: inherit
-  
+
   docker-container-push-cpu:
     uses:
       ./.github/workflows/release_docker_container.yaml
     with:
       # working-directory: libs/infinity_emb
       dockerfile: libs/infinity_emb/Dockerfile.cpu_auto
-      image: michaelf34/infinity
+      image: vlsi/infinity
       appendix_tag: "-cpu"
-      platforms: "linux/amd64"
+      platforms: "linux/amd64,linux/arm64"
     secrets: inherit
   
   # Container to large for github action

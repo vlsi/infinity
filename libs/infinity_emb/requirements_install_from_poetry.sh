@@ -93,13 +93,16 @@ sed -i '/triton/d' requirements.txt
 
 # Step 5: Install torch with the extracted version and other dependencies
 
-python -m pip install -r requirements.txt --no-cache-dir --extra-index-url "$EXTRA_URL"
+# Note: pip's HTTP/wheel cache is intentionally left enabled here so a Docker
+# `--mount=type=cache,target=/root/.cache/pip` makes rebuilds reuse downloaded wheels.
+# The cache lives in the build mount, not in the image layer, so it adds no image size.
+python -m pip install -r requirements.txt --extra-index-url "$EXTRA_URL"
 python -m pip list --format=freeze | grep nvidia | xargs python -m  pip uninstall -y triton torch torchvision
-python -m pip install torch torchvision --index-url "$EXTRA_URL" --no-cache-dir
+python -m pip install torch torchvision --index-url "$EXTRA_URL"
 
 # Step 6: Optionally install the current package
 if [[ $NO_ROOT -eq 0 ]]; then
-    python -m pip install -e . --no-deps --no-cache-dir --extra-index-url "$EXTRA_URL"
+    python -m pip install -e . --no-deps --extra-index-url "$EXTRA_URL"
 fi
 
 # rm requirements.txt

@@ -42,6 +42,36 @@ def test_crossencoder():
     assert rankings[0] > rankings[1] > rankings[2]
 
 
+def test_crossencoder_rerank_limits():
+    from infinity_emb.primitives import RerankLimits
+
+    model = CrossEncoderPatched(
+        engine_args=EngineArgs(
+            model_name_or_path="mixedbread-ai/mxbai-rerank-xsmall-v1",
+            compile=SHOULD_TORCH_COMPILE,
+            device=device,
+        )
+    )
+
+    query = "Where is Paris? " * 100
+    long_doc = "Paris is the capital of France. " * 200
+
+    no_limits = RerankLimits(None, None, None)
+    uncapped = model.encode_pre([(query, long_doc, no_limits)])
+    doc_capped = model.encode_pre([(query, long_doc, RerankLimits(None, 32, None))])
+    pair_capped = model.encode_pre([(query, long_doc, RerankLimits(None, None, 48))])
+    all_capped = model.encode_pre([(query, long_doc, RerankLimits(16, 32, 40))])
+    legacy_pair = model.encode_pre([(query, long_doc)])  # 2-tuple -> default limits
+
+    # capping the document shortens the scored sequence vs no limits at all.
+    assert doc_capped["input_ids"].shape[1] < uncapped["input_ids"].shape[1]
+    # the pair cap is a hard ceiling on the joined sequence (plus no extra).
+    assert pair_capped["input_ids"].shape[1] <= 48
+    assert all_capped["input_ids"].shape[1] <= 40
+    # a 2-tuple still works (falls back to the default RerankLimits).
+    assert legacy_pair["input_ids"].shape[1] > 0
+
+
 def test_patched_crossencoder_vs_sentence_transformers():
     model = CrossEncoderPatched(
         engine_args=EngineArgs(

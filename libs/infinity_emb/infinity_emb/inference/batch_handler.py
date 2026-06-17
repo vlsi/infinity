@@ -21,6 +21,9 @@ from infinity_emb.log_handler import logger
 from infinity_emb.primitives import (
     AbstractSingle,
     ClassifyReturnType,
+    DEFAULT_MAX_PAIR_TOKENS,
+    DEFAULT_MAX_QUERY_TOKENS,
+    DEFAULT_MAX_TOKENS_PER_DOC,
     EmbeddingReturnType,
     EmbeddingSingle,
     ImageClassType,
@@ -30,6 +33,7 @@ from infinity_emb.primitives import (
     OverloadStatus,
     PredictSingle,
     PrioritizedQueueItem,
+    RerankLimits,
     RerankReturnType,
     ReRankSingle,
     get_inner_item,
@@ -180,6 +184,9 @@ class BatchHandler:
         docs: list[str],
         raw_scores: bool = False,
         top_n: Optional[int] = None,
+        max_query_tokens: Optional[int] = DEFAULT_MAX_QUERY_TOKENS,
+        max_tokens_per_doc: Optional[int] = DEFAULT_MAX_TOKENS_PER_DOC,
+        max_pair_tokens: Optional[int] = DEFAULT_MAX_PAIR_TOKENS,
     ) -> tuple[list[RerankReturnType], int]:
         """Schedule a query to be reranked with documents. Awaits until reranked.
 
@@ -189,6 +196,10 @@ class BatchHandler:
             raw_scores (bool): return raw scores instead of sigmoid
             top_n (Optional[int]): number of top scores to return after reranking
                 if top_n is None, <= 0 or out of range, all scores are returned
+            max_query_tokens (Optional[int]): head-truncate the query to N tokens.
+            max_tokens_per_doc (Optional[int]): head-truncate each document to N tokens.
+            max_pair_tokens (Optional[int]): cap the joined (query, document) pair to N
+                tokens, trimming the longest side first. None disables a given limit.
 
         Raises:
             ModelNotDeployedError: If loaded model does not expose `rerank`
@@ -202,7 +213,12 @@ class BatchHandler:
             raise ModelNotDeployedError(
                 "the loaded moded cannot fullyfill `rerank`. " f"Options are {self.capabilities}."
             )
-        rerankables = [ReRankSingle(query=query, document=doc) for doc in docs]
+        limits = RerankLimits(
+            max_query_tokens=max_query_tokens,
+            max_tokens_per_doc=max_tokens_per_doc,
+            max_pair_tokens=max_pair_tokens,
+        )
+        rerankables = [ReRankSingle(query=query, document=doc, limits=limits) for doc in docs]
         scores, usage = await self._schedule(rerankables)
 
         if not raw_scores:

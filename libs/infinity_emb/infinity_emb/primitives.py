@@ -22,6 +22,7 @@ from typing import (
     Any,
     Generic,
     Literal,
+    NamedTuple,
     Optional,
     Type,
     TypedDict,
@@ -223,16 +224,38 @@ class EmbeddingSingle(AbstractSingle):
         return self.sentence
 
 
+# Rerank token budgets, applied per (query, document) pair before scoring so the backend
+# does not blow up on oversized inputs when a client sends no limits. The per-axis caps
+# (query, doc) are head truncations that protect the split; max_pair_tokens is the hard
+# ceiling on the joined sequence length (i.e. on model cost) and also guards against a
+# client overriding the per-axis caps to huge values. None disables a given limit.
+# Defaults are tuned for bge-reranker-v2-m3 (256 + 512 ≈ 768).
+DEFAULT_MAX_QUERY_TOKENS = 256
+DEFAULT_MAX_TOKENS_PER_DOC = 512
+DEFAULT_MAX_PAIR_TOKENS = 768
+
+
+class RerankLimits(NamedTuple):
+    """Per-pair token budgets for reranking; see the DEFAULT_* constants above."""
+
+    max_query_tokens: Optional[int] = DEFAULT_MAX_QUERY_TOKENS
+    max_tokens_per_doc: Optional[int] = DEFAULT_MAX_TOKENS_PER_DOC
+    max_pair_tokens: Optional[int] = DEFAULT_MAX_PAIR_TOKENS
+
+
 @dataclass(**dataclass_args)
 class ReRankSingle(AbstractSingle):
     query: str
     document: str
+    # Token budgets for this pair; the query and document are each head-truncated and the
+    # joined pair is capped. Defaults keep the backend safe when a client sends no limits.
+    limits: RerankLimits = RerankLimits()
 
     def str_repr(self) -> str:
         return self.query + self.document
 
-    def to_input(self) -> tuple[str, str]:
-        return self.query, self.document
+    def to_input(self) -> tuple[str, str, RerankLimits]:
+        return self.query, self.document, self.limits
 
 
 @dataclass(**dataclass_args)

@@ -13,7 +13,13 @@ import numpy as np
 
 
 from infinity_emb._optional_imports import CHECK_PYDANTIC
-from infinity_emb.primitives import EmbeddingEncodingFormat, Modality
+from infinity_emb.primitives import (
+    DEFAULT_MAX_PAIR_TOKENS,
+    DEFAULT_MAX_QUERY_TOKENS,
+    DEFAULT_MAX_TOKENS_PER_DOC,
+    EmbeddingEncodingFormat,
+    Modality,
+)
 
 CHECK_PYDANTIC.mark_required()
 # pydantic 2.x is strictly needed starting v0.0.70
@@ -230,6 +236,30 @@ class RerankInput(BaseModel):
     raw_scores: bool = False
     model: str = "default/not-specified"
     top_n: Optional[int] = Field(default=None, gt=0)
+    max_query_tokens: Optional[int] = Field(
+        default=DEFAULT_MAX_QUERY_TOKENS,
+        gt=0,
+        description=(
+            "Head-truncate the query to N tokens before scoring. "
+            f"Defaults to {DEFAULT_MAX_QUERY_TOKENS}; null disables it."
+        ),
+    )
+    max_tokens_per_doc: Optional[int] = Field(
+        default=DEFAULT_MAX_TOKENS_PER_DOC,
+        gt=0,
+        description=(
+            "Head-truncate each document to N tokens before scoring (Cohere v2 compatible). "
+            f"Defaults to {DEFAULT_MAX_TOKENS_PER_DOC}; null disables it."
+        ),
+    )
+    max_pair_tokens: Optional[int] = Field(
+        default=DEFAULT_MAX_PAIR_TOKENS,
+        gt=0,
+        description=(
+            "Cap the joined (query, document) pair to N tokens, trimming the longest side "
+            f"first. Defaults to {DEFAULT_MAX_PAIR_TOKENS}; null disables it."
+        ),
+    )
 
 
 class _ReRankObject(BaseModel):

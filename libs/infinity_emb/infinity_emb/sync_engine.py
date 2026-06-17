@@ -20,6 +20,11 @@ from typing import (
 
 from infinity_emb.engine import AsyncEmbeddingEngine, AsyncEngineArray, EngineArgs
 from infinity_emb.log_handler import logger
+from infinity_emb.primitives import (
+    DEFAULT_MAX_PAIR_TOKENS,
+    DEFAULT_MAX_QUERY_TOKENS,
+    DEFAULT_MAX_TOKENS_PER_DOC,
+)
 
 if TYPE_CHECKING:
     from infinity_emb import AsyncEmbeddingEngine
@@ -189,6 +194,9 @@ class SyncEngineArray(WeakAsyncLifeMixin):
         docs: list[str],
         raw_scores: bool = False,
         top_n: Optional[int] = None,
+        max_query_tokens: Optional[int] = DEFAULT_MAX_QUERY_TOKENS,
+        max_tokens_per_doc: Optional[int] = DEFAULT_MAX_TOKENS_PER_DOC,
+        max_pair_tokens: Optional[int] = DEFAULT_MAX_PAIR_TOKENS,
     ):
         """sync interface of AsyncEngineArray"""
         return self.async_run(
@@ -198,6 +206,9 @@ class SyncEngineArray(WeakAsyncLifeMixin):
             docs=docs,
             raw_scores=raw_scores,
             top_n=top_n,
+            max_query_tokens=max_query_tokens,
+            max_tokens_per_doc=max_tokens_per_doc,
+            max_pair_tokens=max_pair_tokens,
         )
 
     @add_start_docstrings(AsyncEngineArray.classify.__doc__)

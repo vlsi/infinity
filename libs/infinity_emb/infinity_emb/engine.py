@@ -15,6 +15,9 @@ from infinity_emb.inference import (
 from infinity_emb.log_handler import logger
 from infinity_emb.primitives import (
     ClassifyReturnType,
+    DEFAULT_MAX_PAIR_TOKENS,
+    DEFAULT_MAX_QUERY_TOKENS,
+    DEFAULT_MAX_TOKENS_PER_DOC,
     EmbeddingReturnType,
     ImageClassType,
     ModelCapabilites,
@@ -164,6 +167,9 @@ class AsyncEmbeddingEngine:
         docs: list[str],
         raw_scores: bool = False,
         top_n: Optional[int] = None,
+        max_query_tokens: Optional[int] = DEFAULT_MAX_QUERY_TOKENS,
+        max_tokens_per_doc: Optional[int] = DEFAULT_MAX_TOKENS_PER_DOC,
+        max_pair_tokens: Optional[int] = DEFAULT_MAX_PAIR_TOKENS,
     ) -> tuple[list["RerankReturnType"], int]:
         """rerank multiple sentences
 
@@ -173,6 +179,10 @@ class AsyncEmbeddingEngine:
             raw_scores (bool): return raw scores instead of sigmoid
             top_n (Optional[int]): number of top scores to return after reranking
                 if top_n is None, <= 0 or out of range, all scores are returned
+            max_query_tokens (Optional[int]): head-truncate the query to N tokens.
+            max_tokens_per_doc (Optional[int]): head-truncate each document to N tokens.
+            max_pair_tokens (Optional[int]): cap the joined (query, document) pair to N
+                tokens, trimming the longest side first. None disables a given limit.
 
         Raises:
             ValueError: raised if engine is not started yet
@@ -189,6 +199,9 @@ class AsyncEmbeddingEngine:
             docs=docs,
             raw_scores=raw_scores,
             top_n=top_n,
+            max_query_tokens=max_query_tokens,
+            max_tokens_per_doc=max_tokens_per_doc,
+            max_pair_tokens=max_pair_tokens,
         )
 
         return scores, usage
@@ -351,6 +364,9 @@ class AsyncEngineArray:
         docs: list[str],
         raw_scores: bool = False,
         top_n: Optional[int] = None,
+        max_query_tokens: Optional[int] = DEFAULT_MAX_QUERY_TOKENS,
+        max_tokens_per_doc: Optional[int] = DEFAULT_MAX_TOKENS_PER_DOC,
+        max_pair_tokens: Optional[int] = DEFAULT_MAX_PAIR_TOKENS,
     ) -> tuple[list["RerankReturnType"], int]:
         """rerank multiple sentences
 
@@ -360,6 +376,10 @@ class AsyncEngineArray:
             docs (list[str]): docs to be reranked
             raw_scores (bool): return raw scores instead of sigmoid
             top_n (Optional[int]): number of top scores to return after reranking
+            max_query_tokens (Optional[int]): head-truncate the query to N tokens.
+            max_tokens_per_doc (Optional[int]): head-truncate each document to N tokens.
+            max_pair_tokens (Optional[int]): cap the joined (query, document) pair to N
+                tokens, trimming the longest side first. None disables a given limit.
 
         Raises:
             ValueError: raised if engine is not started yet
@@ -370,7 +390,15 @@ class AsyncEngineArray:
             list[float]: list of scores
             int: token usage
         """
-        return await self[model].rerank(query=query, docs=docs, raw_scores=raw_scores, top_n=top_n)
+        return await self[model].rerank(
+            query=query,
+            docs=docs,
+            raw_scores=raw_scores,
+            top_n=top_n,
+            max_query_tokens=max_query_tokens,
+            max_tokens_per_doc=max_tokens_per_doc,
+            max_pair_tokens=max_pair_tokens,
+        )
 
     async def classify(
         self, *, model: str, sentences: list[str], raw_scores: bool = False
